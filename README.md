@@ -17,16 +17,20 @@ System składa się z dwóch głównych części:
 
 - `gesture_recognition/` – Moduł do zbierania danych i treningu modelu LSTM  
 - `sign-gesture-lstm/` – Aplikacja webowa (rozpoznawanie gestów w przeglądarce)  
-- `demo.mp4` – Krótki film prezentujący działanie aplikacji  
+- `demo.mp4` – Pełne nagranie prezentujące działanie aplikacji  
+- `demo_short.gif` – Krótkie demo aplikacji w formacie GIF (animowana zapowiedź)
 - `README.md` – Dokumentacja projektu  
 
-## Short Demo
-
-[![Watch Demo](demo_short.gif)](demo_short.gif)
 
 ### Licencja
 
 Projekt udostępniony na licencji **MIT** – możesz swobodnie używać kodu do celów naukowych, edukacyjnych i komercyjnych (z zachowaniem informacji o autorze).
+
+---
+
+## Short Demo
+
+[![Watch Demo](demo_short.gif)](demo_short.gif)
 
 ---
 
@@ -50,7 +54,8 @@ The system consists of two main components:
 
 - `gesture_recognition/` – Data collection and LSTM model training module  
 - `sign-gesture-lstm/` – Web application (browser-based gesture recognition)  
-- `demo.mp4` – Short video demonstrating the application  
+- `demo.mp4` – Full video presenting the complete functionality of the application  
+- `demo_short.gif` – Short demo preview of the application (animated GIF)
 - `README.md` – Project documentation  
 
 ## License
