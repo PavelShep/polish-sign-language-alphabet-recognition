@@ -10,8 +10,8 @@
 Projekt polega na stworzeniu systemu rozpoznawania gestów polskiego alfabetu języka migowego (PJM) przy użyciu uczenia maszynowego.  
 System składa się z dwóch głównych części:
 
-1. **gesture_recognition** – skrypty do zbierania danych i trenowania modelu LSTM  
-2. **sign-gesture-lstm** – aplikacja webowa umożliwiająca rozpoznawanie gestów w czasie rzeczywistym
+1. **gesture_recognition** – aplikacja webowa umożliwiająca rozpoznawanie gestów w czasie rzeczywistym 
+2. **sign-gesture-lstm** – skrypty do zbierania danych i trenowania modelu LSTM
 
 ### Struktura repozytorium
 
@@ -19,7 +19,10 @@ System składa się z dwóch głównych części:
 - `sign-gesture-lstm/` – Aplikacja webowa (rozpoznawanie gestów w przeglądarce)  
 - `demo.mp4` – Krótki film prezentujący działanie aplikacji  
 - `README.md` – Dokumentacja projektu  
-                
+
+## Short Demo
+
+[![Watch Demo](demo_short.gif)](demo_short.gif)
 
 ### Licencja
 
@@ -40,8 +43,8 @@ This project focuses on developing a gesture recognition system for the Polish S
 
 The system consists of two main components:
 
-1. **gesture_recognition** – scripts for data collection and training an LSTM model  
-2. **sign-gesture-lstm** – a web application that enables real-time gesture recognition in the browser  
+1. **gesture_recognition** – a web application that enables real-time gesture recognition in the browser 
+2. **sign-gesture-lstm** – scripts for data collection and training an LSTM model 
 
 ### Repository Structure
 
@@ -49,7 +52,6 @@ The system consists of two main components:
 - `sign-gesture-lstm/` – Web application (browser-based gesture recognition)  
 - `demo.mp4` – Short video demonstrating the application  
 - `README.md` – Project documentation  
-
 
 ## License
 
