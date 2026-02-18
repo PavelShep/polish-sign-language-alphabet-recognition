@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rozpoznawanie Gestów</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <span class="user-info" id="userInfo">Ładowanie...</span>
+        <button class="logout-btn" id="logoutBtn">Wyloguj się</button>
+    </nav>
+    <h1>Rozpoznawanie Gestów</h1>
+    <div class="container">
+        <button id="backBtn">← Na główną</button>
+        <canvas id="outputCanvas" width="320" height="240"></canvas>
+        <div id="prediction">
+            <span class="help-icon" title="Pokaż przewodnik po gestach">❓</span>
+            <p>Gest: <span id="gesture">Brak</span></p>
+            <p>Pewność: <span id="confidence">0%</span></p>
+            <p>Wynik: <span id="result"></span></p>
+            <button id="recognizeBtn">Rozpoznaj gest</button>
+        </div>
+    </div>
+    <p id="status">Łączenie z serwerem...</p>
+
+    <!-- Mdalne okno -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span id="close-btn" class="close-btn">&times;</span>
+            <h2>Przewodnik po gestach dla: <span id="modal-letter"></span></h2>
+            <div id="modal-video-container">
+                <img id="modal-video" alt="Wideo z gestem">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if token exists, redirect to login if not
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'login.html';
+        }
+
+        const token = localStorage.getItem('token');
+        const video = document.createElement('video');
+        video.width = 320;
+        video.height = 240;
+        video.autoplay = true;
+        video.playsinline = true;
+
+        const canvas = document.getElementById('outputCanvas');
+        const ctx = canvas.getContext('2d');
+        const gestureSpan = document.getElementById('gesture');
+        const confidenceSpan = document.getElementById('confidence');
+        const resultSpan = document.getElementById('result');
+        const status = document.getElementById('status');
+        const recognizeBtn = document.getElementById('recognizeBtn');
+        const backBtn = document.getElementById('backBtn');
+        const userInfo = document.getElementById('userInfo');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const modal = document.getElementById('modal');
+        const closeBtn = document.getElementById('close-btn');
+        const modalLetter = document.getElementById('modal-letter');
+        const modalVideo = document.getElementById('modal-video');
+        const helpIcon = document.querySelector('.help-icon');
+
+        // Decode JWT to get username
+        function getUsernameFromToken() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.username;
+                } catch (e) {
+                    console.error('Error decoding token:', e);
+                    return 'Unknown';
+                }
+            }
+            return 'Guest';
+        }
+
+        userInfo.textContent = `Użytkownik: ${getUsernameFromToken()}`;
+        logoutBtn.addEventListener('click', () => {
+            // Clear token and redirect to login page
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        });
+
+        // Define letters and actions arrays
+        const letters = ["a", "ą", "b", "c", "ć", "ch", "cz", "d", "e", "ę", "f", "g", "h", "i", "j", "k", "l", "ł", "m", "n", "ń", "o", "ó", "p", "r", "rz", "s", "ś", "sz", "t", "u", "w", "y", "z", "ź", "ż"];
+        const actions = ["a", "a_nosowe", "b", "c", "c_kreska", "ch", "cz", "d", "e", "e_kreska", "f", "g", "h", "i", "j", "k", "l", "l_przekreslone", "m", "n", "n_kreska", "o", "o_kreska", "p", "r", "rz", "s", "s_kreska", "sz", "t", "u", "w", "y", "z", "z_kreska", "z_kropka"];
+
+        // Get letter from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedLetter = urlParams.get('letter');
+        if (!selectedLetter) {
+            status.textContent = 'Brak wybranej litery. Wróć na stronę główną.';
+            recognizeBtn.disabled = true;
+        }
+
+        // Initialize webcam
+        async function setupWebcam() {
+            // Set up webcam stream
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    function drawVideo() {
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        requestAnimationFrame(drawVideo);
+                    }
+                    drawVideo();
+                    status.textContent = `Kamera uruchomiona. Rozpoznaj gest dla '${selectedLetter?.toUpperCase() || 'N/A'}'.`;
+                    recognizeBtn.disabled = false;
+                };
+            } catch (error) {
+                status.textContent = 'Błąd dostępu do kamery: ' + error.message;
+                console.error('Webcam error:', error);
+            }
+        }
+
+        // Initialize WebSocket
+        const ws = new WebSocket('ws://localhost:8000/ws');
+        ws.onopen = () => {
+            // Connection established, start webcam
+            status.textContent = 'Połączono z serwerem. Uruchamianie kamery...';
+            console.log('WebSocket connected');
+            setupWebcam();
+            openModal(); // Open modal window automatically
+        };
+        ws.onmessage = (event) => {
+            // Handle WebSocket messages
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Received message:', data);
+
+                if (data.status === 'completed') {
+                    status.textContent = 'Rozpoznawanie zakończone. Gotowy na kolejny gest.';
+                    recognizeBtn.disabled = false;
+                    // Map gesture to corresponding letter and display in uppercase
+                    const gestureIndex = actions.indexOf(data.gesture);
+                    const recognizedLetter = gestureIndex !== -1 ? letters[gestureIndex].toUpperCase() : 'Brak';
+                    gestureSpan.textContent = recognizedLetter;
+                    confidenceSpan.textContent = data.confidence ? (data.confidence * 100).toFixed(2) + '%' : '0%';
+
+                    // Map recognized gesture to letter and compare
+                    const gestureIndexForResult = actions.indexOf(data.gesture);
+                    const recognizedLetterForResult = gestureIndexForResult !== -1 ? letters[gestureIndexForResult] : null;
+                    const result = recognizedLetterForResult === selectedLetter ? 'Prawidłowo' : 'Nieprawidłowo';
+                    resultSpan.textContent = result;
+
+                    // Remove existing classes to avoid stacking
+                    resultSpan.classList.remove('correct', 'incorrect');
+
+                    // Add appropriate class based on result
+                    if (result === 'Prawidłowo') {
+                        resultSpan.classList.add('correct');
+                        fetch('/api/progress', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': token
+                            },
+                            body: JSON.stringify({ letter: selectedLetter })
+                        }).then(response => {
+                            if (!response.ok) {
+                                console.error('Error saving progress');
+                            }
+                        }).catch(error => console.error('Error saving progress:', error));
+                    } else {
+                        resultSpan.classList.add('incorrect');
+                    }
+                } else if (data.status === 'error') {
+                    status.textContent = 'Błąd: ' + data.message;
+                    recognizeBtn.disabled = false;
+                    console.error('Backend error:', data.message);
+                }
+            } catch (e) {
+                status.textContent = 'Błąd analizy odpowiedzi';
+                console.error('Error parsing WebSocket message:', e);
+            }
+        };
+        ws.onclose = () => {
+            // Connection closed
+            status.textContent = 'Rozłączono z serwerem.';
+            recognizeBtn.disabled = true;
+            console.log('WebSocket closed');
+        };
+        ws.onerror = (error) => {
+            // Handle WebSocket errors
+            status.textContent = 'Błąd połączenia WebSocket: ' + error;
+            recognizeBtn.disabled = true;
+            console.error('WebSocket error:', error);
+        };
+
+        // Collect 30 frames on button click
+        recognizeBtn.addEventListener('click', () => {
+            // Start gesture recognition process
+            if (ws.readyState !== WebSocket.OPEN || !selectedLetter) {
+                status.textContent = 'Brak połączenia lub brak wybranej litery';
+                return;
+            }
+
+            status.textContent = 'Nagrywanie 30 klatek...';
+            recognizeBtn.disabled = true;
+            gestureSpan.textContent = 'Brak';
+            confidenceSpan.textContent = '0%';
+            resultSpan.textContent = 'N/A';
+
+            const frames = [];
+            const frameInterval = 66; // ~15 FPS (1000ms / 15 = 66ms)
+            let frameCount = 0;
+
+            function captureFrame() {
+                if (frameCount < 30) {
+                    const frameCanvas = document.createElement('canvas');
+                    frameCanvas.width = 320;
+                    frameCanvas.height = 240;
+                    const frameCtx = frameCanvas.getContext('2d');
+                    frameCtx.drawImage(video, 0, 0, 320, 240);
+                    const frameData = frameCanvas.toDataURL('image/jpeg', 0.8);
+                    frames.push(frameData);
+                    frameCount++;
+                    console.log(`Captured frame ${frameCount}`);
+                    setTimeout(captureFrame, frameInterval);
+                } else {
+                    console.log('Sending 30 frames to backend');
+                    ws.send(JSON.stringify({ command: 'process_frames', frames, token }));
+                }
+            }
+
+            captureFrame();
+        });
+
+        // Navigate back to main page
+        backBtn.addEventListener('click', () => {
+            // Redirect to index page
+            window.location.href = 'index.html';
+        });
+
+        // Open modal window
+        function openModal() {
+            // Open modal if letter is selected
+            if (!selectedLetter) return;
+            modal.style.display = 'block';
+            modalLetter.textContent = selectedLetter.toUpperCase();
+            const actionIndex = letters.indexOf(selectedLetter);
+            if (actionIndex !== -1) {
+                const videoName = actions[actionIndex] + '.webp';
+                const videoPath = `/videos/${videoName}`;
+                modalVideo.src = videoPath;
+                fetch(videoPath, { method: 'HEAD' })
+                    .then(response => {
+                        if (response.ok) {
+                            modalVideo.src = videoPath;
+                        } else {
+                            modalVideo.src = '';
+                            console.warn(`Video ${videoName} not found`);
+                        }
+                    })
+                    .catch(error => {
+                        modalVideo.src = '';
+                        console.error('Error checking video:', error);
+                    });
+            }
+        }
+
+        // Close modal window
+        closeBtn.addEventListener('click', () => {
+            // Close modal on click
+            modal.style.display = 'none';
+        });
+
+        // Open modal on help icon click
+        helpIcon.addEventListener('click', openModal);
+
+        // Open modal on page load
+        window.addEventListener('load', openModal);
+    </script>
+</body>
+</html>

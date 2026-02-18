@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gesty PJM</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <span class="user-info" id="userInfo">Ładowanie...</span>
+        <button class="logout-btn" id="logoutBtn">Wyloguj się</button>
+    </nav>
+    <h1>Gesty Polskiego Alfabetu Języka Migowego</h1>
+    <button id="certificateBtn" title="Żeby pobrać certyfikat, należy pomyślnie przejść rozpoznawanie wszystkich gestów alfabetu PJM" disabled >Pobierz Certyfikat</button>
+    <div class="card-container"></div>
+
+    <script>
+        // Check if token exists, redirect to login if not
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'login.html';
+        }
+
+        const token = localStorage.getItem('token');
+
+        // Decode JWT to get username
+        function getUsernameFromToken() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.username;
+                } catch (e) {
+                    console.error('Error decoding token:', e);
+                    return 'Unknown';
+                }
+            }
+            return 'Guest';
+        }
+
+        const userInfo = document.getElementById('userInfo');
+        const logoutBtn = document.getElementById('logoutBtn');
+        userInfo.textContent = `Użytkownik: ${getUsernameFromToken()}`;
+
+        logoutBtn.addEventListener('click', () => {
+            // Clear token and redirect to login page
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        });
+
+        const certificateBtn = document.getElementById('certificateBtn');
+
+        // Fetch progress and color cards
+        async function fetchProgress() {
+            try {
+                const response = await fetch('/api/progress', {
+                    headers: {'Authorization': token}
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return new Set(data.completed);
+                } else {
+                    console.error('Error fetching progress');
+                    return new Set();
+                }
+            } catch (error) {
+                console.error('Error fetching progress:', error);
+                return new Set();
+            }
+        }
+
+        (async () => {
+            // Load completed letters and update card colors
+            const completedLetters = await fetchProgress();
+            const letters = ["a", "ą", "b", "c", "ć", "ch", "cz", "d", "e", "ę", "f", "g", "h", "i", "j", "k", "l", "ł", "m", "n", "ń", "o", "ó", "p", "r", "rz", "s", "ś", "sz", "t", "u", "w", "y", "z", "ź", "ż"];
+            const container = document.querySelector('.card-container');
+            letters.forEach(letter => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.textContent = letter.toUpperCase();
+                if (completedLetters.has(letter)) {
+                    card.style.backgroundColor = 'green';
+                }
+                card.onclick = () => window.location.href = `recognize.html?letter=${letter}`;
+                container.appendChild(card);
+            });
+
+            // Enable certificate button if all letters completed
+            if (completedLetters.size === letters.length) {
+                certificateBtn.disabled = false;
+            }
+        })();
+
+        certificateBtn.addEventListener('click', async () => {
+            // Download certificate on button click
+            try {
+                const response = await fetch('/api/certificate', {
+                    headers: {'Authorization': token}
+                });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'certificate.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    console.error('Error downloading certificate');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zarejestruj się</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <span class="user-info" id="userInfo">Gość</span>
+        <button class="logout-btn" id="logoutBtn" style="display: none;">Wyloguj się</button>
+    </nav>
+    <h1>Zarejestruj się</h1>
+    <form id="registerForm">
+        <label for="username">Imię i Nazwisko:</label>
+        <input type="text" id="username" required>
+        <label for="password">Hasło:</label>
+        <input type="password" id="password" required>
+        <button type="submit">Zarejestruj się</button>
+    </form>
+    <p id="message"></p>
+    <a href="login.html">Masz już konto? Zaloguj się</a>
+
+    <script>
+        // Get DOM elements
+        const form = document.getElementById('registerForm');
+        const message = document.getElementById('message');
+        const userInfo = document.getElementById('userInfo');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Show username and logout if token exists
+        if (localStorage.getItem('token')) {
+            userInfo.textContent = `Użytkownik: ${getUsernameFromToken()}`;
+            logoutBtn.style.display = 'block';
+        }
+
+        function getUsernameFromToken() {
+            // Decode JWT to get username
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.username;
+                } catch (e) {
+                    console.error('Error decoding token:', e);
+                    return 'Unknown';
+                }
+            }
+            return 'Guest';
+        }
+
+        logoutBtn.addEventListener('click', () => {
+            // Clear token and redirect to login page
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        });
+
+        form.addEventListener('submit', async (e) => {
+            // Handle registration form submission
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    message.textContent = 'Rejestracja udana. Zaloguj się teraz.';
+                    setTimeout(() => window.location.href = 'login.html', 2000);
+                } else {
+                    message.textContent = data.error || 'Błąd rejestracji';
+                }
+            } catch (error) {
+                message.textContent = 'Błąd serwera';
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>
