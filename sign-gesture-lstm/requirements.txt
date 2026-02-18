@@ -1,0 +1,7 @@
+mediapipe==0.10.5
+opencv-python==4.8.0.76
+numpy==1.23.5
+tensorflow==2.12.0
+scikit-learn==1.2.2
+matplotlib==3.9.2
+seaborn==0.13.2
