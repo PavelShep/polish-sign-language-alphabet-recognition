@@ -1,4 +1,4 @@
-# Praca Dyplomowa – Rozpoznawanie gestów polskiego alfabetu języka migowego
+# (PL) Praca Dyplomowa – Rozpoznawanie gestów polskiego alfabetu języka migowego
 
 **Autor:** Pavel Shapialevich (Paweł Szepielewicz)  
 **Promotor:** Łukasz Liemieszewski  
@@ -27,7 +27,7 @@ Projekt udostępniony na licencji **MIT** – możesz swobodnie używać kodu do
 
 ---
 
-# Diploma Thesis – Recognition of Polish Sign Language Alphabet Gestures
+# (ENG) Diploma Thesis – Recognition of Polish Sign Language Alphabet Gestures
 
 **Author:** Pavel Shapialevich (Paweł Szepielewicz)  
 **Supervisor:** Łukasz Liemieszewski  
