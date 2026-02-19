@@ -57,8 +57,6 @@ python collect_data.py
 
 Skrypt zapisuje sekwencje punktów dłoni do folderu `data/`.
 
-![Interfejs okna przygotowania do nagrywania](photo_trening.png)
-
 ### 🔹 2. Trenowanie modelu
 
 ```bash
@@ -113,6 +111,11 @@ Skrypt wyświetli:
 - Skuteczność modelu zależy od jakości i liczby zebranych danych.
 
 ---
+
+![Recording preparation window interface](photo_trening.png)
+
+---
+
 # (ENG) sign-gesture-lstm
 
 Scripts for training a hand gesture recognition model and real-time detection using a webcam.
@@ -171,8 +174,6 @@ python collect_data.py
 ```
 
 The script saves hand landmark sequences to the `data/` folder.
-
-![Recording preparation window interface](photo_trening.png)
 
 ### 🔹 2. Model Training
 
